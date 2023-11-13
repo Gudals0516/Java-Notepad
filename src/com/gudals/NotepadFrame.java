@@ -6,14 +6,17 @@ import javax.swing.*;
 import javax.swing.border.LineBorder;
 import javax.swing.event.CaretEvent;
 import javax.swing.event.CaretListener;
+import javax.swing.event.MenuEvent;
+import javax.swing.event.MenuListener;
 import javax.swing.text.BadLocationException;
 import java.awt.*;
-import java.awt.event.ComponentAdapter;
-import java.awt.event.ComponentEvent;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
+import java.awt.event.*;
+import java.io.*;
 
 public class NotepadFrame extends JFrame {
+    private Frame frame = new Frame("메모장");
+    private FileDialog saveDialog = new FileDialog(frame, "저장", FileDialog.SAVE);
+    private  FileDialog openDialog = new FileDialog(frame, "열기", FileDialog.LOAD);
     private JPanel pan1 = new JPanel();
     private  JPanel pan2 = new JPanel();
     private JMenuBar mb = new JMenuBar();
@@ -26,14 +29,13 @@ public class NotepadFrame extends JFrame {
     private  JMenuItem m2Item1 = new JMenuItem("복사");
     private  JMenuItem m2Item2 = new JMenuItem("붙여넣기");
     private  JMenuItem m3Item1 = new JMenuItem("글꼴    ");
-
-    // private JComponent lastComp = btn3;
     private JTextArea ta = new JTextArea();
     private JScrollPane scpan = new JScrollPane(ta);
     private JLabel label1 = new JLabel(" ln : 1, col : 1");
     private LineBorder labelBorder = new LineBorder(Color.gray, 1, false);
+    private String firstTxt = "";
+    private String fileName = "제목 없음";
     public void viewon(){
-
         // Menu
         //m1
         m1.setFont(new Font("파일", Font.BOLD, 15));
@@ -59,6 +61,11 @@ public class NotepadFrame extends JFrame {
         mb.add(m3);
         mb.setBackground(Color.WHITE);
         setJMenuBar(mb);
+
+        MenuActionListener listener = new MenuActionListener();
+        m1Item1.addActionListener(listener);
+        m1Item2.addActionListener(listener);
+        m1Item3.addActionListener(listener);
 
         // textArea
         ta.addCaretListener(new CaretListener() {
@@ -93,18 +100,6 @@ public class NotepadFrame extends JFrame {
         scpan.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
 
         // panel
-        /*pan1.addComponentListener(new ComponentAdapter() {
-            Point prevPoint = null;
-            @Override
-            public void componentResized(ComponentEvent e) {
-                super.componentResized(e);
-                if(prevPoint==null || prevPoint.y!=lastComp.getY()){
-                    pan1.setPreferredSize(new Dimension(pan1.getPreferredSize().width, lastComp.getY() + lastComp.getHeight()));
-                    pan1.updateUI();
-                }
-                prevPoint = lastComp.getLocation();
-            }// componentResized
-        });// addComponentListener*/
         pan1.setLayout(new BorderLayout());
         pan1.setSize(1000,550);
         pan2.setLayout(new FlowLayout(FlowLayout.RIGHT, 0, 0));
@@ -117,11 +112,96 @@ public class NotepadFrame extends JFrame {
         add(pan1, BorderLayout.CENTER);
         add(pan2, BorderLayout.SOUTH);
 
+        //exit
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                super.windowClosing(e);
+                if(ta.getText().equals(firstTxt)){
+                    System.out.println("같음");
+                    System.exit(0);
+                }else {
+                    String[] answer = new String[]{"저장", "취소"};
+                    int result = JOptionPane.showOptionDialog(null, "종료하시겠습니까?", "Option"
+                        , JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.INFORMATION_MESSAGE, null, answer, null);
+                    if(result==0){
+                        saveDialog.setLocationRelativeTo(null);
+                        saveDialog.setVisible(true);
+                        String data = saveDialog.getDirectory()+ saveDialog.getFile();
+                        try {
+                            BufferedWriter bw = new BufferedWriter(new FileWriter(data+".txt"));
+                            String str = ta.getText();
+                            for(int i=0; i<str.length(); i++){
+                                if(str.charAt(i)=='\n') {
+                                    bw.newLine();
+                                }else {
+                                    bw.write(str.charAt(i));
+                                }
+                            }// for
+                            bw.close();
+                            System.exit(0);
+                        } catch (IOException ex) {
+                            throw new RuntimeException(ex);
+                        }
+                    }else {
+                        System.exit(0);
+                    }
+                }// popWindow
+            }// windowClosing
+        });// addWindowListener
         // frame
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1000,600);
         setLocationRelativeTo(null);
-        setTitle("메모장");
+        setTitle(fileName);
         setVisible(true);
     }// viewon
+
+    class MenuActionListener implements ActionListener{
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            if(e.getActionCommand().equals("새파일")){
+                ta.setText("");
+                fileName = "제목 없음";
+                firstTxt = "";
+                setTitle(fileName);
+            }else if(e.getActionCommand().equals("열기")){
+                openDialog.setLocationRelativeTo(null);
+                openDialog.setVisible(true);
+                String data = openDialog.getDirectory() + openDialog.getFile();
+                fileName = openDialog.getFile();
+                setTitle(fileName);
+                try {
+                    BufferedReader br = new BufferedReader(new FileReader(data));
+                    String str = br.readLine();
+                    ta.setText(str);
+                    firstTxt=str;
+                    br.close();
+                } catch (FileNotFoundException ex) {
+                    throw new RuntimeException(ex);
+                } catch (IOException ex) {
+                    throw new RuntimeException(ex);
+                }
+            }else if(e.getActionCommand().equals("저장")){
+                saveDialog.setVisible(true);
+                String data = saveDialog.getDirectory() + saveDialog.getFile();
+                fileName = saveDialog.getFile();
+                setTitle(fileName+".txt");
+                firstTxt=ta.getText();
+                try {
+                    BufferedWriter bw = new BufferedWriter(new FileWriter(data+".txt"));
+                    String str = ta.getText();
+                    for(int i=0; i<str.length(); i++){
+                        if(str.charAt(i)=='\n'){
+                            bw.newLine();
+                        }else {
+                            bw.write(str.charAt(i));
+                        }
+                    }
+                    bw.close();
+                } catch (IOException ex) {
+                    throw new RuntimeException(ex);
+                }
+            }// if
+        }// actionPerformed
+    }// class
 }// class
