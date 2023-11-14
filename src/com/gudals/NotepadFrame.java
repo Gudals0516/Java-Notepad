@@ -19,21 +19,24 @@ public class NotepadFrame extends JFrame {
     private  FileDialog openDialog = new FileDialog(frame, "열기", FileDialog.LOAD);
     private JPanel pan1 = new JPanel();
     private  JPanel pan2 = new JPanel();
+    private JPanel popPan = new JPanel();
     private JMenuBar mb = new JMenuBar();
     private JMenu m1 = new JMenu("  파일  ");
     private JMenu m2 = new JMenu("  편집  ");
     private JMenu m3 = new JMenu("  서식  ");
-    private  JMenuItem m1Item1 = new JMenuItem("새파일");
-    private  JMenuItem m1Item2 = new JMenuItem("열기");
-    private  JMenuItem m1Item3 = new JMenuItem("저장");
-    private  JMenuItem m2Item1 = new JMenuItem("복사");
-    private  JMenuItem m2Item2 = new JMenuItem("붙여넣기");
-    private  JMenuItem m3Item1 = new JMenuItem("글꼴    ");
+    private JMenuItem m1Item1 = new JMenuItem("새파일");
+    private JMenuItem m1Item2 = new JMenuItem("열기");
+    private JMenuItem m1Item3 = new JMenuItem("저장");
+    private JMenuItem m2Item1 = new JMenuItem("복사");
+    private JMenuItem m2Item2 = new JMenuItem("붙여넣기");
+    private JMenuItem m2Item3 = new JMenuItem("자르기");
+    private JMenuItem m3Item1 = new JMenuItem("글꼴");
     private JTextArea ta = new JTextArea();
     private JScrollPane scpan = new JScrollPane(ta);
     private JLabel label1 = new JLabel(" ln : 1, col : 1");
     private LineBorder labelBorder = new LineBorder(Color.gray, 1, false);
     private String firstTxt = "";
+    private String lastName = "제목 없음";
     private String fileName = "제목 없음";
     public void viewon(){
         // Menu
@@ -49,8 +52,10 @@ public class NotepadFrame extends JFrame {
         m2.setFont(new Font("편집", Font.BOLD, 15));
         m2Item1.setFont(new Font("복사", Font.BOLD, 15));
         m2Item2.setFont(new Font("붙여넣기", Font.BOLD, 15));
+        m2Item3.setFont(new Font("자르기", Font.BOLD, 15));
         m2.add(m2Item1);
         m2.add(m2Item2);
+        m2.add(m2Item3);
         //m3
         m3.setFont(new Font("서식", Font.BOLD, 15));
         m3Item1.setFont(new Font("글꼴", Font.BOLD, 15));
@@ -67,6 +72,11 @@ public class NotepadFrame extends JFrame {
         m1Item2.addActionListener(listener);
         m1Item3.addActionListener(listener);
 
+        m2Item1.addActionListener(listener);
+        m2Item2.addActionListener(listener);
+        m2Item3.addActionListener(listener);
+
+        m3Item1.addActionListener(listener);
         // textArea
         ta.addCaretListener(new CaretListener() {
             @Override
@@ -128,29 +138,33 @@ public class NotepadFrame extends JFrame {
                         saveDialog.setLocationRelativeTo(null);
                         saveDialog.setVisible(true);
                         String data = saveDialog.getDirectory()+ saveDialog.getFile();
-                        try {
-                            BufferedWriter bw = new BufferedWriter(new FileWriter(data+".txt"));
-                            String str = ta.getText();
-                            for(int i=0; i<str.length(); i++){
-                                if(str.charAt(i)=='\n') {
-                                    bw.newLine();
-                                }else {
-                                    bw.write(str.charAt(i));
-                                }
-                            }// for
-                            bw.close();
+                        if(saveDialog.getFile()==null){
                             System.exit(0);
-                        } catch (IOException ex) {
-                            throw new RuntimeException(ex);
+                        }else {
+                            try {
+                                BufferedWriter bw = new BufferedWriter(new FileWriter(data + ".txt"));
+                                String str = ta.getText();
+                                for (int i = 0; i < str.length(); i++) {
+                                    if (str.charAt(i) == '\n') {
+                                        bw.newLine();
+                                    } else {
+                                        bw.write(str.charAt(i));
+                                    }
+                                }// for
+                                bw.close();
+                                System.exit(0);
+                            } catch (IOException ex) {
+                                throw new RuntimeException(ex);
+                            }
                         }
                     }else {
                         System.exit(0);
-                    }
+                    }// saveDialog if
                 }// popWindow
             }// windowClosing
         });// addWindowListener
         // frame
-        setSize(1000,600);
+        setSize(600,600);
         setLocationRelativeTo(null);
         setTitle(fileName);
         setVisible(true);
@@ -168,18 +182,24 @@ public class NotepadFrame extends JFrame {
                 openDialog.setLocationRelativeTo(null);
                 openDialog.setVisible(true);
                 String data = openDialog.getDirectory() + openDialog.getFile();
+                lastName = fileName;
                 fileName = openDialog.getFile();
                 setTitle(fileName);
-                try {
-                    BufferedReader br = new BufferedReader(new FileReader(data));
-                    String str = br.readLine();
-                    ta.setText(str);
-                    firstTxt=str;
-                    br.close();
-                } catch (FileNotFoundException ex) {
-                    throw new RuntimeException(ex);
-                } catch (IOException ex) {
-                    throw new RuntimeException(ex);
+                if(openDialog.getFile()==null){
+                    setTitle(lastName);
+                    fileName = lastName;
+                }else {
+                    try {
+                        BufferedReader br = new BufferedReader(new FileReader(data));
+                        String str = br.readLine();
+                        ta.setText(str);
+                        firstTxt = str;
+                        br.close();
+                    } catch (FileNotFoundException ex) {
+                        setTitle(lastName);
+                    } catch (IOException ex) {
+                        throw new RuntimeException(ex);
+                    }
                 }
             }else if(e.getActionCommand().equals("저장")){
                 saveDialog.setVisible(true);
@@ -187,21 +207,106 @@ public class NotepadFrame extends JFrame {
                 fileName = saveDialog.getFile();
                 setTitle(fileName+".txt");
                 firstTxt=ta.getText();
-                try {
-                    BufferedWriter bw = new BufferedWriter(new FileWriter(data+".txt"));
-                    String str = ta.getText();
-                    for(int i=0; i<str.length(); i++){
-                        if(str.charAt(i)=='\n'){
-                            bw.newLine();
-                        }else {
-                            bw.write(str.charAt(i));
+                if(saveDialog.getFile()==null){
+                    System.exit(0);
+                }else {
+                    try {
+                        BufferedWriter bw = new BufferedWriter(new FileWriter(data + ".txt"));
+                        String str = ta.getText();
+                        for (int i = 0; i < str.length(); i++) {
+                            if (str.charAt(i) == '\n') {
+                                bw.newLine();
+                            } else {
+                                bw.write(str.charAt(i));
+                            }
                         }
+                        bw.close();
+                    } catch (IOException ex) {
+                        throw new RuntimeException(ex);
                     }
-                    bw.close();
-                } catch (IOException ex) {
-                    throw new RuntimeException(ex);
                 }
-            }// if
+            }else if(e.getActionCommand().equals("복사")){
+                ta.copy();
+            }else if(e.getActionCommand().equals("붙여넣기")){
+                ta.paste();
+            }else if(e.getActionCommand().equals("자르기")){
+                ta.copy();
+                ta.replaceRange("", ta.getSelectionStart(), ta.getSelectionEnd());
+            }else if(e.getActionCommand().equals("글꼴")){
+                FontSetting fontSetting = new FontSetting(NotepadFrame.this);
+                fontSetting.setVisible(true);
+            }
         }// actionPerformed
-    }// class
-}// class
+    }// ActionListener class
+
+    class FontSetting extends JFrame implements ActionListener{
+        private JComboBox comboBox;
+        private JPanel pan1 = new JPanel();
+        private JPanel pan2 = new JPanel();
+        private JScrollPane scrollFont, scrollStyle, scrollSize;
+        private JList<String> fontList, styleList, sizeList;
+        private JButton confirm = new JButton("확인");
+        private JButton cancel = new JButton("취소");
+        NotepadFrame note;
+        public FontSetting(NotepadFrame note){
+            this.note = note;
+            setTitle("글꼴");
+            setSize(400, 400);
+            setLocationRelativeTo(null);
+            setDefaultCloseOperation(HIDE_ON_CLOSE);
+            setResizable(false);
+            setVisible(false);
+
+            comboBox = new JComboBox();
+
+            String[] fonts = {"굴림체", "궁서체", "굴림체", "D2Coding"};
+            fontList = new JList<>(fonts);
+            fontList.setFont(new Font("글씨체", Font.BOLD, 20));
+            scrollFont = new JScrollPane(fontList);
+            scrollFont.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+
+            String[] styles = {"PLAIN", "BOLD", "ITALIC"};
+            styleList = new JList<>(styles);
+            styleList.setFont(new Font("글씨스타일", Font.BOLD, 15));
+            scrollStyle = new JScrollPane(styleList);
+            scrollStyle.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+
+            String[] sizes = {"12", "14", "16", "18", "20", "24", "28", "32"
+                                , "36", "40", "52", "64", "76", "88", "100"};
+            sizeList = new JList<>(sizes);
+            sizeList.setFont(new Font("글씨크기", Font.BOLD, 15));
+            scrollSize = new JScrollPane(sizeList);
+            scrollSize.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+
+            confirm.addActionListener(this);
+            cancel.addActionListener(this);
+
+            pan1.setLayout(new GridLayout(1,3));
+            pan2.setLayout(new FlowLayout(FlowLayout.RIGHT));
+
+            pan1.add(scrollFont);
+            pan1.add(scrollStyle);
+            pan1.add(scrollSize);
+            pan2.add(confirm);
+            pan2.add(cancel);
+
+            add(pan1, BorderLayout.CENTER);
+            add(pan2, BorderLayout.SOUTH);
+        }
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            if(e.getActionCommand().equals("확인")){
+                String font = fontList.getSelectedValue();
+                int style = styleList.getSelectedIndex();
+                int size = Integer.parseInt(sizeList.getSelectedValue());
+
+                Font f = new Font(font, style, size);
+                FontSetting.this.note.ta.setFont(f);
+                setVisible(false);
+            }else if(e.getActionCommand().equals("취소")){
+                setVisible(false);
+            }
+        }// actionPerformed
+    }// FontSetting class
+}// Frame class
